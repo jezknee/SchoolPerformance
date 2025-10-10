@@ -9,6 +9,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 
 ```{r}
 library(readxl)
+library(dplyr)
 data_ks4_input <- read_excel("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\england_ks4final.xlsx")
 head(data_ks4_input, 5)
 ```
@@ -29,18 +30,51 @@ head(lookup_lsoa_input, 50)
 ```
 
 ```{r}
-lookup_lsoa <- data.frame(lookup_lsoa_input[,c("pcd8", "oa21cd", "lsoa21cd", "msoa21cd", "ladcd")])
-names(lookup_lsoa)[names(lookup_lsoa) == 'pcd8'] <- 'PCODE'
+lookup_lsoa <- data.frame(lookup_lsoa_input[,c("pcds", "oa21cd", "lsoa21cd", "msoa21cd", "ladcd")])
+names(lookup_lsoa)[names(lookup_lsoa) == 'pcds'] <- 'PCODE'
+names(lookup_lsoa)[names(lookup_lsoa) == 'lsoa21cd'] <- 'LSOA_code'
+names(lookup_lsoa)[names(lookup_lsoa) == 'msoa21cd'] <- 'MSOA_code'
 head(lookup_lsoa, 5)
 ```
 
 
 ```{r}
-joined_ks4_lookup <- join(data_ks4_2, lookup_lsoa, by = )
+joined_ks4_lookup <- data_ks4_2 |> left_join(lookup_lsoa, by = "PCODE")
+head(joined_ks4_lookup, 50)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+```{r}
+parks_input <- read_excel("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\LSOA access to parks and playing fields.xlsx")
+#head(parks_input, 50)
+#colnames(parks_input)
+names(parks_input)[names(parks_input) == 'Average distance to nearest Park, Public Garden, or Playing Field (m)'] <- 'AVGPARKDIST'
+names(parks_input)[names(parks_input) == 'Average combined size of  Parks, Public Gardens, or Playing Fields within 1,000 m radius (m2)'] <- 'SUMPARKSIZE'
+names(parks_input)[names(parks_input) == "LSOA code"] <- 'LSOA_code'
+parks <- data.frame(parks_input[,c("LSOA_code", "AVGPARKDIST", "SUMPARKSIZE")])
+head(parks, 50)
+```
+```{r}
+joined_ks4_2 <- joined_ks4_lookup |> left_join(parks, by = "LSOA_code")
+head(joined_ks4_2, 50)
+```
+```{r}
+qual_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Qualifications_Census.csv")
+qual <- data.frame(qual_input)
+colnames(qual) <- c("Date", "Geography", "MSOA_code", "All", "No_qual", "Level_1", "Level_2", "Apprenticeship", "Level_3", "Level_4", "Other_qual")
+head(qual, 50)
+```
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+```{r}
+num_cols <- setdiff(names(qual)[sapply(qual, is.numeric)], "All")
+qual[num_cols] <- lapply(qual[num_cols], function(x) x / qual$All)
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+# Now all numerical columns (except "All") are proportions
+qual <- data.frame(qual[,c("MSOA_code","No_qual","Level_1","Level_2","Apprenticeship","Level_3","Level_4","Other_qual")])
+head(qual)
+```
+
+```{r}
+joined_ks4_3 <- joined_ks4_2 |> left_join(qual, by = "MSOA_code")
+head(joined_ks4_3, 50)
+```
+
