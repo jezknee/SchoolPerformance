@@ -1,0 +1,46 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(readxl)
+data_ks4_input <- read_excel("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\england_ks4final.xlsx")
+head(data_ks4_input, 5)
+```
+
+```{r}
+data_ks4 <- data.frame(data_ks4_input[,c("RECTYPE","LEA","ESTAB","URN","SCHNAME","PCODE","PCON_CODE","NFTYPE","RELDENOM","ADMPOL_PT","EGENDER","FEEDER","PGPUP","ATT8SCR","P8PUP")])
+head(data_ks4,50)
+```
+```{r}
+# you need the comma afterwards, because it's [rows, columns]
+data_ks4_2 <- data_ks4[!is.na(data_ks4$ATT8SCR) & data_ks4$ATT8SCR != "NE" & !is.na(data_ks4$SCHNAME), ]
+head(data_ks4_2,50)
+```
+
+```{r}
+lookup_lsoa_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\PCD_OA21_LSOA21_MSOA21_LAD_MAY25_UK_LU.csv")
+head(lookup_lsoa_input, 50)
+```
+
+```{r}
+lookup_lsoa <- data.frame(lookup_lsoa_input[,c("pcd8", "oa21cd", "lsoa21cd", "msoa21cd", "ladcd")])
+names(lookup_lsoa)[names(lookup_lsoa) == 'pcd8'] <- 'PCODE'
+head(lookup_lsoa, 5)
+```
+
+
+```{r}
+joined_ks4_lookup <- join(data_ks4_2, lookup_lsoa, by = )
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
