@@ -77,4 +77,22 @@ head(qual)
 joined_ks4_3 <- joined_ks4_2 |> left_join(qual, by = "MSOA_code")
 head(joined_ks4_3, 50)
 ```
+```{r}
+religion_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Religion_Census.csv")
+
+colnames(religion_input)
+religion <- data.frame(religion_input[,c("geography.code",  "Religion..detailed...Total..All.Usual.Residents","Religion..detailed...Christian", "Religion..detailed...Buddhist","Religion..detailed...Hindu","Religion..detailed...Jewish","Religion..detailed...Muslim","Religion..detailed...Sikh","Religion..detailed...No.religion","Religion..detailed...Other.religion","Religion..detailed...Religion.not.stated")])
+colnames(religion) <- c("MSOA_code","All","Christian","Buddhist","Hindu","Jewish","Muslim","Sikh","No_Religion","Other_Religion","Religion_Not_Stated")
+religion$All <- (religion$All - religion$Religion_Not_Stated)
+religion <- subset(religion, select = -c(Religion_Not_Stated))
+
+num_cols <- setdiff(names(religion)[sapply(religion, is.numeric)], "All")
+religion[num_cols] <- lapply(religion[num_cols], function(x) x / religion$All)
+religion <- subset(religion, select = -c(All))
+
+head(religion)
+
+joined_ks4_4 <- joined_ks4_3 |> left_join(religion, by = "MSOA_code")
+head(joined_ks4_4, 50)
+```
 
