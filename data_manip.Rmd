@@ -95,4 +95,188 @@ head(religion)
 joined_ks4_4 <- joined_ks4_3 |> left_join(religion, by = "MSOA_code")
 head(joined_ks4_4, 50)
 ```
+```{r}
+travel_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Travel_To_Work_Census.csv")
+
+colnames(travel_input)
+colnames(travel_input) <- c("Date", "Geography", "MSOA_code", "All", "Work_Home", "Work_Underground_Tram","Work_Train","Work_Bus","Work_Taxi","Work_Motorcycle","Work_Drive","Work_Passenger","Work_Bicycle","Work_Foot","Work_Other_Travel")
+
+travel <- subset(travel_input, select = -c(Date, Geography))
+
+head(travel)
+
+num_cols <- setdiff(names(travel)[sapply(travel, is.numeric)], "All")
+travel[num_cols] <- lapply(travel[num_cols], function(x) x / travel$All)
+travel <- subset(travel, select = -c(All))
+
+head(travel)
+
+joined_ks4_5 <- joined_ks4_4 |> left_join(travel, by = "MSOA_code")
+head(joined_ks4_5, 50)
+
+```
+
+```{r}
+# armed forces - veterans
+armed_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Armed_Forces_Census.csv")
+colnames(armed_input)
+colnames(armed_input) <- c("Date", "Geography", "MSOA_code", "All", "Armed_Forces", "Reserve_Armed_Forces", "Both_Armed_Forces", "Any_Armed_Forces")
+
+armed <- subset(armed_input, select = -c(Date, Geography))
+
+head(armed)
+
+num_cols <- setdiff(names(armed)[sapply(armed, is.numeric)], "All")
+armed[num_cols] <- lapply(armed[num_cols], function(x) x / armed$All)
+armed <- subset(armed, select = -c(All, Armed_Forces, Reserve_Armed_Forces, Both_Armed_Forces))
+armed$Any_Armed_Forces <- 1 - armed$Any_Armed_Forces
+head(armed)
+
+joined_ks4_6 <- joined_ks4_5 |> left_join(armed, by = "MSOA_code")
+head(joined_ks4_6, 50)
+
+```
+
+
+```{r}
+# number of bedrooms
+bedrooms_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Bedrooms_Census.csv")
+colnames(bedrooms_input)
+colnames(bedrooms_input) <- c("Date", "Geography", "MSOA_code", "All", "One_Bedroom", "Two_Bedrooms", "Three_Bedrooms", "Four_Plus_Bedrooms")
+
+bedrooms <- subset(bedrooms_input, select = -c(Date, Geography))
+
+num_cols <- setdiff(names(bedrooms)[sapply(bedrooms, is.numeric)], "All")
+bedrooms[num_cols] <- lapply(bedrooms[num_cols], function(x) x / bedrooms$All)
+
+head(bedrooms)
+
+bedrooms <- subset(bedrooms, select = -c(All))
+
+joined_ks4_7 <- joined_ks4_6 |> left_join(bedrooms, by = "MSOA_code")
+head(joined_ks4_7, 50)
+
+```
+
+```{r}
+# unpaid care
+care_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Care_Provision_Census.csv")
+colnames(care_input)
+colnames(care_input) <- c("Date", "Geography", "MSOA_code", "All", "No_Care", "Care_19", "Care_9", "Care_10_19","Care_20_49","Care_20_34","Care_35_49","Care_50_Plus")
+
+care <- subset(care_input, select = -c(Date, Geography, Care_9, Care_10_19, Care_20_34, Care_35_49))
+
+head(care)
+
+num_cols <- setdiff(names(care)[sapply(care, is.numeric)], "All")
+care[num_cols] <- lapply(care[num_cols], function(x) x / care$All)
+
+care <- subset(care, select = -c(All))
+
+joined_ks4_8 <- joined_ks4_7 |> left_join(care, by = "MSOA_code")
+head(joined_ks4_8, 50)
+
+```
+```{r}
+heating_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Central_Heating_Census.csv")
+colnames(heating_input)
+
+colnames(heating_input) <- c("Date","Geography","MSOA_code","All","No_Central_Heating","Heating_Mains_Gas","Heating_Bottled_Gas","Heating_Electric","Heating_Oil","Heating_Wood","Heating_Solid_Fuel","Heating_Renewable","Heating_Heat_Networks","Heating_Other_Central","Heating_Two_Not_Renewable","Heating_Two_Renewable")
+
+heating <- subset(heating_input, select = -c(Date, Geography))
+
+num_cols <- setdiff(names(heating)[sapply(heating, is.numeric)], "All")
+heating[num_cols] <- lapply(heating[num_cols], function(x) x / heating$All)
+
+heating <- subset(heating, select = -c(All))
+
+head(heating)
+
+joined_ks4_9 <- joined_ks4_8 |> left_join(heating, by = "MSOA_code")
+head(joined_ks4_9, 50)
+```
+```{r}
+country_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Country_Of_Birth_Census.csv")
+colnames(country_input)
+colnames(country_input) <- c("Date","Geography","MSOA_code","All","Country_Europe_All","Country_UK","Country_EU_All","Country_EU14","Country_EU8","Country_EU2","Country_EU_Other","Country_Europe_NonEU","Country_Europe_NonEU_All","Country_Africa","Country_Middle_East_Asia","Country_Americas","Country_Oceania","Country_British_Overseas")
+
+country <- subset(country_input, select = -c(Date, Geography, Country_Europe_All,Country_EU14,Country_EU8,Country_EU2,Country_EU_Other,Country_Europe_NonEU))
+
+num_cols <- setdiff(names(country)[sapply(country, is.numeric)], "All")
+country[num_cols] <- lapply(country[num_cols], function(x) x / country$All)
+
+country <- subset(country, select = -c(All))
+
+joined_ks4_10 <- joined_ks4_9 |> left_join(country, by = "MSOA_code")
+head(joined_ks4_10, 50)
+
+
+
+```
+```{r}
+#Disability
+
+disability_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Disability_Census.csv")
+colnames(disability_input)
+
+colnames(disability_input) <- c("Date","Geography","MSOA_code","All","Disabled_All","Disabled_Limited_Lot", "Disabled_Limited_Little","Not_Disabled_All","Not_Disabled_LongTermCondition","Not_Disabled_None")
+
+disability <- subset(disability_input, select = -c(Date, Geography, Disabled_Limited_Lot, Disabled_Limited_Little,Not_Disabled_All))
+
+num_cols <- setdiff(names(disability)[sapply(disability, is.numeric)], "All")
+disability[num_cols] <- lapply(disability[num_cols], function(x) x / disability$All)
+
+disability <- subset(disability, select = -c(All))
+
+head(disability)
+
+joined_ks4_11 <- joined_ks4_10 |> left_join(disability, by = "MSOA_code")
+head(joined_ks4_11, 50)
+```
+
+```{r}
+#Energy Efficiency
+```
+
+```{r}
+#Ethnicity
+```
+
+```{r}
+#Industry
+industry_input = read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Industry_Census.csv")
+colnames(industry_input)
+```
+
+```{r}
+#Language
+```
+
+```{r}
+# Length of Residence
+```
+
+```{r}
+#Living arrangements
+```
+
+```{r}
+#Occupation
+```
+
+```{r}
+#Vote 2019
+```
+
+```{r}
+#Vote 2023
+```
+
+```{r}
+# Broadband
+```
+
+```{r}
+#Indices of Deprivation
+```
 
