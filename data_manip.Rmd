@@ -263,6 +263,22 @@ head(joined_ks4_12, 50)
 
 ```{r}
 #Language
+language_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Language_Census.csv")
+colnames(language_input)
+colnames(language_input) <- c("Date","Geography","MSOA_code","All","Language_EnglishWelsh_All","Language_EnglishWelsh_Some","Language_EnglishWelsh_Some_NoAdults","Language_EnglishWelsh_None")
+
+language <- subset(language_input, select = -c(Date, Geography))
+
+num_cols <- setdiff(names(language)[sapply(language, is.numeric)], "All")
+language[num_cols] <- lapply(language[num_cols], function(x) x / language$All)
+
+language <- subset(language, select = -c(All))
+
+head(language)
+
+joined_ks4_13 <- joined_ks4_12 |> left_join(language, by = "MSOA_code")
+head(joined_ks4_13, 50)
+
 ```
 
 ```{r}
@@ -291,5 +307,21 @@ head(joined_ks4_12, 50)
 
 ```{r}
 #Indices of Deprivation
+```
+
+```{r}
+# crime - street
+```
+
+```{r}
+# mean income
+```
+
+```{r}
+# life expectancy
+```
+
+```{r}
+# #GDP per MSOA
 ```
 
