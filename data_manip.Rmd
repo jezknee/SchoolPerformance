@@ -15,7 +15,7 @@ head(data_ks4_input, 5)
 ```
 
 ```{r}
-data_ks4 <- data.frame(data_ks4_input[,c("RECTYPE","LEA","ESTAB","URN","SCHNAME","PCODE","PCON_CODE","NFTYPE","RELDENOM","ADMPOL_PT","EGENDER","FEEDER","PGPUP","ATT8SCR","P8PUP")])
+data_ks4 <- data.frame(data_ks4_input[,c("RECTYPE","LEA","ESTAB","URN","SCHNAME","PCODE","PCON_CODE","PCON_NAME","NFTYPE","RELDENOM","ADMPOL_PT","EGENDER","FEEDER","PGPUP","ATT8SCR","P8PUP")])
 head(data_ks4,50)
 ```
 ```{r}
@@ -36,11 +36,25 @@ names(lookup_lsoa)[names(lookup_lsoa) == 'lsoa21cd'] <- 'LSOA_code'
 names(lookup_lsoa)[names(lookup_lsoa) == 'msoa21cd'] <- 'MSOA_code'
 head(lookup_lsoa, 5)
 ```
+```{r}
+pcon_lookup <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\pcd_pcon_uk_lu_may_24.csv")
+names(pcon_lookup)[names(pcon_lookup) == 'pcd'] <- 'PCODE'
+names(pcon_lookup)[names(pcon_lookup) == 'pconcd'] <- 'PCON_CODE'
+names(pcon_lookup)[names(pcon_lookup) == 'pconnm'] <- 'PCON_NAME'
+head(pcon_lookup)
+
+
+```
 
 
 ```{r}
 joined_ks4_lookup <- data_ks4_2 |> left_join(lookup_lsoa, by = "PCODE")
 head(joined_ks4_lookup, 50)
+```
+
+```{r}
+#joined_ks4_1 <- joined_ks4_lookup |> left_join(pcon_lookup, by = "PCODE")
+#head(joined_ks4_1, 100)
 ```
 
 ```{r}
@@ -283,26 +297,134 @@ head(joined_ks4_13, 50)
 
 ```{r}
 # Length of Residence
+residence_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Length_Of_Residence_Census.csv")
+colnames(residence_input)
+colnames(residence_input) <- c("Date","Geography","MSOA_code","All","Residence_Born_UK","Residence_10_Plus","Residence_5to10","Residence_2to5","Residence_Under2")
+
+num_cols <- setdiff(names(residence_input)[sapply(residence_input, is.numeric)], "All")
+residence_input[num_cols] <- lapply(residence_input[num_cols], function(x) x / residence_input$All)
+
+residence <- subset(residence_input, select = -c(All, Date, Geography))
+
+head(residence)
+
+joined_ks4_14 <- joined_ks4_13 |> left_join(residence, by = "MSOA_code")
+head(joined_ks4_14, 50)
+
 ```
 
 ```{r}
 #Living arrangements
+living_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Living_Arrangements_Census.csv")
+colnames(living_input)
+
+colnames(living_input) <- c("Date","Geography","MSOA_code","All","Living_Couple_All","Living_Marriage_All","Living_Marriage_Opposite","Living_Marriage_Same","Living_Separated_Married","Living_Cohabiting_All","Living_Cohabiting_Opposite","Living_Cohabiting_Same","Living_Single_All","Living_Single_NeverMarried","Living_Single_Married","Living_Single_Separated","Living_Single_Divorced","Living_Single_Widowed")
+
+living <- subset(living_input, select = -c(Date, Geography, Living_Couple_All,Living_Marriage_All,Living_Cohabiting_All,Living_Single_All))
+
+num_cols <- setdiff(names(living)[sapply(living, is.numeric)], "All")
+living[num_cols] <- lapply(living[num_cols], function(x) x / living$All)
+
+living <- subset(living, select = -c(All))
+
+head(living)
+
+joined_ks4_15 <- joined_ks4_14 |> left_join(living, by = "MSOA_code")
+head(joined_ks4_15, 50)
+
+
 ```
 
 ```{r}
 #Occupation
+occupation_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Occupation_Census.csv")
+colnames(occupation_input)
+
+library(stringr)
+
+colnames(occupation_input) <- paste("Occupation", str_extract(colnames(occupation_input), "\\d+"), sep = "_")
+colnames(occupation_input)[0:4] <- c("Date","Geography","MSOA_code","All")
+
+colnames(occupation_input)
+
+num_cols <- setdiff(names(occupation_input)[sapply(occupation_input, is.numeric)], "All")
+occupation_input[num_cols] <- lapply(occupation_input[num_cols], function(x) x / occupation_input$All)
+
+head(occupation_input)
+
+occupation <- subset(occupation_input, select = -c(Date, Geography, All))
+
+head(occupation)
+
+joined_ks4_16 <- joined_ks4_15 |> left_join(occupation, by = "MSOA_code")
+head(joined_ks4_16, 50)
+     
+
+
 ```
 
 ```{r}
 #Vote 2019
+vote_2019_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\HoC-GE2019-results-by-constituency.csv")
+colnames(vote_2019_input)
+
+vote_2019 <- subset(vote_2019_input, select = c("ONS.ID","Electorate","Valid.votes","Con","Lab","LD","BRX","Green","All.other.candidates"))
+vote_2019$Vote2019_No_Vote <- vote_2019$Electorate - vote_2019$Valid.votes
+
+num_cols <- setdiff(names(vote_2019)[sapply(vote_2019, is.numeric)], "Electorate")
+vote_2019[num_cols] <- lapply(vote_2019[num_cols], function(x) x / vote_2019$Electorate)
+
+colnames(vote_2019) <- c("PCON_CODE","Electorate","All","Vote2019_Con","Vote2019_Lab","Vote2019_LD","Vote2019_BRX","Vote2019_Green","Vote2019_Other","Vote2019_None")
+vote_2019 <- subset(vote_2019, select = -c(Electorate, All))
+
+vote_2019[c("PCON_CODE")] <- lapply(vote_2019[c("PCON_CODE")], function(x) gsub(" ", "", x))
+
+head(vote_2019,100)
+
+#joined_ks4_17 <- joined_ks4_16 |> left_join(vote_2019, by = "PCON_CODE")
+#head(joined_ks4_17, 50)
+
+
 ```
 
 ```{r}
-#Vote 2023
+#Vote 2024
+vote_2024_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\HoC-GE2024-results-by-constituency.csv")
+colnames(vote_2024_input)
+
+vote_2024 <- subset(vote_2024_input, select = c("ONS.ID", "Constituency.name","Electorate","Valid.votes","Con","Lab","LD","RUK","Green","All.other.candidates"))
+vote_2024$Vote2024_No_Vote <- vote_2024$Electorate - vote_2024$Valid.votes
+
+num_cols <- setdiff(names(vote_2024)[sapply(vote_2024, is.numeric)], "Electorate")
+vote_2024[num_cols] <- lapply(vote_2024[num_cols], function(x) x / vote_2024$Electorate)
+
+colnames(vote_2024) <- c("PCON_CODE", "PCON_NAME","Electorate","All","Vote2024_Con","Vote2024_Lab","Vote2024_LD","Vote2024_RUK","Vote2024_Green","Vote2024_Other","Vote2024_None")
+vote_2024 <- subset(vote_2024, select = -c(Electorate, All, PCON_CODE))
+
+#vote_2024[c("PCON_CODE")] <- lapply(vote_2024[c("PCON_CODE")], function(x) gsub(" ", "", x))
+
+head(vote_2024,100)
+
+joined_ks4_17 <- joined_ks4_16 |> left_join(vote_2024, by = "PCON_NAME")
+head(joined_ks4_17, 5000)
+
 ```
 
 ```{r}
 # Broadband
+broadband_input = read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\BroadbandSpeed.csv")
+colnames(broadband_input)
+
+colnames(broadband_input) <- c("PCON_CODE","PCON_NAME","Broadband_Superfast","Broadband_Gigabit","Broadband_Broadband_Below_Obligation","Broadband_Download_Speed","Broadband_Under10Mbps","Broadband_Over30Mbps")
+
+broadband_input$Broadband_Download_Speed <- broadband_input$Broadband_Download_Speed/1000
+head(broadband_input)
+
+broadband <- subset(broadband_input, select = -c(PCON_CODE))
+
+joined_ks4_18 <- joined_ks4_17 |> left_join(broadband, by = "PCON_NAME")
+head(joined_ks4_18, 50)
+
 ```
 
 ```{r}
