@@ -246,6 +246,19 @@ head(joined_ks4_11, 50)
 #Industry
 industry_input = read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\Industry_Census.csv")
 colnames(industry_input)
+industry <- subset(industry_input, select = c("geography.code", "Industry..current...Total..All.usual.residents.aged.16.years.and.over.in.employment.the.week.before.the.census", "Industry..current...A..Agriculture..Forestry.and.fishing","Industry..current...B..Mining.and.quarrying","Industry..current...C..Manufacturing","Industry..current...D..Electricity..gas..steam.and.air.conditioning.supply","Industry..current...E...Water.supply..Sewerage..Waste.management.and.Remediation.activities","Industry..current...F..Construction","Industry..current...G..Wholesale.and.retail.trade..repair.of.motor.vehicles.and.motorcycles","Industry..current...H..Transport.and.storage","Industry..current...I..Accommodation.and.food.service.activities","Industry..current...J..Information.and.communication","Industry..current...K..Financial.and.insurance.activities","Industry..current...L..Real.estate.activities","Industry..current...M..Professional..scientific.and.technical.activities","Industry..current...N..Administrative.and.support.service.activities","Industry..current...O..Public.administration.and.defence..compulsory.social.security","Industry..current...P..Education","Industry..current...Q..Human.health.and.social.work.activities","Industry..current...R..S..T..U.Other"))
+
+colnames(industry) <- c("MSOA_code","All", "Industry_A_Agriculture","Industry_B_Mining","Industry_C_Manufacturing","Industry_D_Electricity","Industry_E_Water","Industry_F_Construction","Industry_G_Retail","Industry_H_Transport","Industry_I_Accommodation","Industry_J_Information","Industry_K_Financial","Industry_L_Real_Estate","Industry_M_Professional_Technical","Industry_N_Admin","Industry_O_Defence","Industry_P_Education","Industry_Q_Health","Industry_R_Other")
+
+num_cols <- setdiff(names(industry)[sapply(industry, is.numeric)], "All")
+industry[num_cols] <- lapply(industry[num_cols], function(x) x / industry$All)
+
+industry <- subset(industry, select = -c(All))
+
+head(industry)
+
+joined_ks4_12 <- joined_ks4_11 |> left_join(industry, by = "MSOA_code")
+head(joined_ks4_12, 50)
 ```
 
 ```{r}
