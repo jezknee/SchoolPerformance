@@ -11,7 +11,34 @@ head(education_data)
 ```
 
 ```{r}
-df <- subset(education_data, select = -c(RECTYPE,LEA,ESTAB,SCHNAME,PCODE,PCON_CODE,PCON_NAME,FEEDER))
+df <- subset(education_data, select = -c(RECTYPE,LEA,ESTAB,SCHNAME,PCODE,PCON_CODE,PCON_NAME,FEEDER,oa21cd,LSOA_code,MSOA_code,ladcd))
+head(df,50)
+```
+```{r}
+library(tidyverse)
+
+df <- df %>%
+  mutate(dummy=1) %>%
+  pivot_wider(names_from=NFTYPE, values_from=dummy, values_fill=0, names_prefix = "SCHOOL_TYPE_") %>%
+  mutate(dummy=1) %>%
+  pivot_wider(names_from=ADMPOL_PT, values_from=dummy, values_fill=0, names_prefix = "ADMISSIONS_POLICY_") %>%
+  mutate(dummy=1) %>%
+  pivot_wider(names_from=EGENDER, values_from=dummy, values_fill=0, names_prefix = "SCHOOL_GENDER_") %>%
+  mutate(dummy=1) %>%
+  pivot_wider(names_from=RELDENOM, values_from=dummy, values_fill=0, names_prefix = "SCHOOL_RELIGION_")
+
 head(df)
+```
+```{r}
+df_check <- subset(df, select = -c(URN, PGPUP,P8PUP))
+df_check <- df_check %>%
+  mutate(ATT8SCR = as.numeric(ATT8SCR))
+head(df_check)
+
+df_check.cor <- cor(df_check, use = "pairwise.complete.obs")
+df_check.cor
+```
+```{r}
+write.csv(df_check.cor, "C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\correlation_matrix.csv", row.names = TRUE)
 ```
 
