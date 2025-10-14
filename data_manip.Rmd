@@ -429,10 +429,79 @@ head(joined_ks4_18, 50)
 
 ```{r}
 #Indices of Deprivation
+deprivation_input <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\File_7_-_All_IoD2019_Scores__Ranks__Deciles_and_Population_Denominators_3.csv")
+colnames(deprivation_input)
+
+deprivation <- subset(deprivation_input, select = c("LSOA.code..2011.", "Index.of.Multiple.Deprivation..IMD..Rank..where.1.is.most.deprived.", "Income.Rank..where.1.is.most.deprived.","Employment.Rank..where.1.is.most.deprived.","Education..Skills.and.Training.Rank..where.1.is.most.deprived.","Health.Deprivation.and.Disability.Rank..where.1.is.most.deprived.","Crime.Rank..where.1.is.most.deprived.","Barriers.to.Housing.and.Services.Rank..where.1.is.most.deprived.","Living.Environment.Rank..where.1.is.most.deprived.","Income.Deprivation.Affecting.Children.Index..IDACI..Rank..where.1.is.most.deprived.", "Children.and.Young.People.Sub.domain.Rank..where.1.is.most.deprived.","Adult.Skills.Sub.domain.Rank..where.1.is.most.deprived.","Geographical.Barriers.Sub.domain.Rank..where.1.is.most.deprived.","Wider.Barriers.Sub.domain.Rank..where.1.is.most.deprived.","Indoors.Sub.domain.Rank..where.1.is.most.deprived.","Outdoors.Sub.domain.Rank..where.1.is.most.deprived."))
+#colnames(deprivation)
+colnames(deprivation) <- c("LSOA_code","IMD_All","IMD_Income", "IMD_Employment","IMD_Education","IMD_Health","IMD_Crime","IMD_Housing","IMD_LivingEnvironment","IMD_IncomeChildren","IMD_Children","IMD_AdultSkills","IMD_Geographical","IMD_Wider","IMD_Indoors","IMD_Outdoors")
+#colnames(deprivation)
+head(deprivation)
+
+max_IMD <- max(deprivation$IMD_All, na.rm = TRUE)
+num_cols <- setdiff(names(deprivation)[sapply(deprivation, is.numeric)], "IMD_All")
+deprivation[num_cols] <- lapply(deprivation[num_cols], function(x) x / max_IMD)
+
+deprivation <- subset(deprivation, select = -c(IMD_All))
+
+head(deprivation)
+
+joined_ks4_19 <- joined_ks4_18 |> left_join(deprivation, by = "LSOA_code")
+head(joined_ks4_19, 50)
+
 ```
 
 ```{r}
 # crime - street
+library(tidyverse)
+
+main_folder <- "C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\CrimeData"
+subfolders <- list.dirs(main_folder, recursive = FALSE)
+
+# Combine ALL data first
+all_data <- map_dfr(subfolders, function(subfolder) {
+  
+  street_files <- list.files(
+    path = subfolder,
+    pattern = "street",
+    full.names = TRUE
+  )
+  
+  combined_df <- map_dfr(street_files, read_csv)
+  
+  combined_df %>%
+    select(`Crime ID`, `LSOA code`, `Crime type`)
+})
+
+# THEN pivot once on the complete dataset
+final_df <- all_data %>%
+  count(`LSOA code`, `Crime type`, name = "crime_count") %>%
+  pivot_wider(
+    names_from = `Crime type`,
+    values_from = crime_count,
+    values_fill = 0
+  )
+
+head(final_df)
+# Do your manipulation
+#processed_df <- combined_df %>%
+# your transformations here
+#mutate(source_folder = basename(subfolder))  # example: track which folder
+```
+```{r}
+crime <- final_df
+colnames(crime) <- c("LSOA_code","StreetCrime_AntiSocialBehaviour","StreetCrime_BicycleTheft","StreetCrime_Burglary","StreetCrime_CriminalDamageArson","StreetCrime_Drugs","StreetCrime_OtherCrime","StreetCrime_OtherTheft","StreetCrime_PossessionWeapons","StreetCrime_PublicOrder","StreetCrime_Robbery","StreetCrime_Shoplifting","StreetCrime_THeftFromPerson","StreetCrime_VehicleCrime","StreetCrime_ViolenceSexualOffences")
+
+num_cols <- setdiff(names(crime)[sapply(crime, is.numeric)], "LSOA_code")
+crime[num_cols] <- lapply(crime[num_cols], function(x) x / 365)
+
+head(crime)
+
+joined_ks4_20 <- joined_ks4_19 |> left_join(crime, by = "LSOA_code")
+head(joined_ks4_20, 50)
+```
+```{r}
+write_csv(joined_ks4_20, file.path("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\output.csv"))
 ```
 
 ```{r}

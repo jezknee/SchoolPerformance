@@ -1,0 +1,17 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+education_data <- read.csv("C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\output.csv")
+head(education_data)
+```
+
+```{r}
+df <- subset(education_data, select = -c(RECTYPE,LEA,ESTAB,SCHNAME,PCODE,PCON_CODE,PCON_NAME,FEEDER))
+head(df)
+```
+
