@@ -35,10 +35,38 @@ df_check <- df_check %>%
   mutate(ATT8SCR = as.numeric(ATT8SCR))
 head(df_check)
 
-df_check.cor <- cor(df_check, use = "pairwise.complete.obs")
+df_check.cor <- data.frame(cor(df_check, use = "pairwise.complete.obs"))
 df_check.cor
 ```
 ```{r}
-write.csv(df_check.cor, "C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\correlation_matrix.csv", row.names = TRUE)
+
+df_check.cor <- as.matrix(df_check.cor)
+
+library(reshape2)
+
+# Convert correlation matrix to long format
+df_long <- melt(df_check.cor)
+
+# The result will have columns: Var1, Var2, value
+# You can rename them if you want:
+colnames(df_long) <- c("Variable1", "Variable2", "Correlation")
+
+head(df_long)
+
+
+write.csv(df_long, "C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\correlation_matrix2.csv", row.names = TRUE)
+#library(corrplot)
+#corrplot(df_check.cor)
+```
+```{r}
+df2 <- df[, !grepl("ADMISSIONS_POLICY", colnames(df))]
+df2 <- df2[, !grepl("SCHOOL_TYPE", colnames(df2))]
+df2 <- df2[, !grepl("SCHOOL_GENDER", colnames(df2))]
+#df2 <- df2[, !grepl("IMD_Children", colnames(df2))]
+#df2 <- df2[, !grepl("IMD_Education", colnames(df2))]
+
+df2 <- subset(df2, select = -c(IMD_Children,IMD_Education,PGPUP,P8PUP))
+
+head(df2)
 ```
 
