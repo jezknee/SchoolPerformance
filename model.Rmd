@@ -11,7 +11,8 @@ head(education_data)
 ```
 ```{r}
 colnames(education_data)
-education_data2 <- subset(education_data, select = -c(RECTYPE,URN, NFTYPE, RELDENOM, ADMPOL_PT, EGENDER, PGPUP, P8PUP, LEA,ESTAB,SCHNAME,PCODE,PCON_CODE,PCON_NAME,FEEDER,oa21cd,ladcd,LSOA_code,ATT8SCR))
+education_data2 <- education_data[education_data$ATT8SCR != "SUPP", ]
+education_data2 <- subset(education_data2, select = -c(RECTYPE,URN, NFTYPE, RELDENOM, ADMPOL_PT, EGENDER, PGPUP, P8PUP, LEA,ESTAB,SCHNAME,PCODE,PCON_CODE,PCON_NAME,FEEDER,oa21cd,ladcd,LSOA_code,ATT8SCR))
 id_cols <- c("MSOA_code")
 ed <- education_data2[!is.na(education_data$MSOA_code),]
 all_na_cols <- names(ed)[colSums(is.na(ed)) > 0]
@@ -34,7 +35,9 @@ column_averages <- aggregate(
 
 head(column_averages)
 
-ed_test <- education_data
+#ed_test <- education_data
+ed_test <- education_data[!is.na(education_data$MSOA_code),]
+ed_test <- ed_test[ed_test$ATT8SCR != "SUPP", ]
 my_dataframe_merged <- merge(ed_test, column_averages, 
                               by = "MSOA_code", suffixes = c("", "_avg"), all.x = TRUE)
 
@@ -55,7 +58,22 @@ head(ed_test)
 ```
 
 ```{r}
-df <- subset(ed_test, select = -c(RECTYPE,LEA,ESTAB,SCHNAME,PCODE,PCON_CODE,PCON_NAME,FEEDER,oa21cd,LSOA_code,MSOA_code,ladcd))
+ed_test_filled <- ed_test
+
+# For each numeric column, replace NAs with the column mean
+for(col in names(ed_test_filled)) {
+  if(is.numeric(ed_test_filled[[col]])) {
+    col_mean <- mean(ed_test_filled[[col]], na.rm = TRUE)
+    ed_test_filled[[col]][is.na(ed_test_filled[[col]])] <- col_mean
+  }
+}
+
+# Check remaining NAs
+colSums(is.na(ed_test_filled))
+```
+
+```{r}
+df <- subset(ed_test_filled, select = -c(RECTYPE,LEA,ESTAB,SCHNAME,PCODE,PCON_CODE,PCON_NAME,FEEDER,oa21cd,LSOA_code,MSOA_code,ladcd))
 head(df,50)
 ```
 ```{r}
@@ -83,6 +101,24 @@ df_check.cor <- data.frame(cor(df_check, use = "pairwise.complete.obs"))
 df_check.cor
 ```
 ```{r}
+target_correlations <- abs(df_check.cor[,"ATT8SCR"])
+sorted_column_order <- order(target_correlations, decreasing = TRUE)
+reordered_data <- df_check[, sorted_column_order]
+head(reordered_data)
+```
+
+
+```{r}
+#
+```
+
+
+```{r}
+head(df,1000)
+write_csv(df, "C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\check_nulls2.csv")
+```
+
+```{r}
 
 df_check.cor <- as.matrix(df_check.cor)
 
@@ -103,16 +139,54 @@ write.csv(df_long, "C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\
 #corrplot(df_check.cor)
 ```
 ```{r}
-df2 <- df[, !grepl("ADMISSIONS_POLICY", colnames(df))]
-df2 <- df2[, !grepl("SCHOOL_TYPE", colnames(df2))]
-df2 <- df2[, !grepl("SCHOOL_GENDER", colnames(df2))]
+df2 <- df
+#df2 <- df[, !grepl("ADMISSIONS_POLICY", colnames(df))]
+#df2 <- df2[, !grepl("SCHOOL_TYPE", colnames(df2))]
+#df2 <- df2[, !grepl("SCHOOL_GENDER", colnames(df2))]
+#df2 <- df2[, !grepl("SCHOOL_RELIGION", colnames(df2))]
 #df2 <- df2[, !grepl("IMD_Children", colnames(df2))]
 #df2 <- df2[, !grepl("IMD_Education", colnames(df2))]
 
 df2 <- subset(df2, select = -c(IMD_Children,IMD_Education,PGPUP,P8PUP))
+#df2 <- subset(df2, select = -c(PGPUP,P8PUP))
 
-df2$Performance <- cut(as.numeric(df2$ATT8SCR), breaks=c(0,10,20,30,40,50,60,70,200), labels=c("0-10","10-20","20-30","30-40","40-50","50-60","60-70","70+"))
-df2 <- subset(df2, select = -c(ATT8SCR))
+att8_summary <- summary(as.numeric(df2$ATT8SCR))
+
+# Extract the specific values you want
+att8_median <- att8_summary["Median"]
+att8_q1 <- att8_summary["1st Qu."]
+att8_q3 <- att8_summary["3rd Qu."]
+
+#df2$Performance <- cut(as.numeric(df2$ATT8SCR), breaks = c(-1,att8_q1,att8_median,att8_q3,100), labels = c("Low", "Below_Average", "Above_Average", "Excellent"))
+df2$Performance <- cut(as.numeric(df2$ATT8SCR), breaks = c(-1,att8_q1,att8_q3,100), labels = c("Low", "Average", "Excellent"))
+
+names(df2) <- gsub(" ", "_", names(df2))
+names(df2) <- gsub("-", "_", names(df2))
+names(df2) <- gsub("/", "_", names(df2))
+```
+
+
+```{r}
+df2d <- subset(df2, select = -c(Performance))
+df2d <- df2d %>%
+  mutate(ATT8SCR = as.numeric(ATT8SCR))
+df2d.cor <- data.frame(cor(df2d, use = "pairwise.complete.obs"))
+target_correlations <- abs(df2d.cor[,"ATT8SCR"])
+sorted_column_order <- order(target_correlations, decreasing = TRUE)
+reordered_df <- df2[, sorted_column_order]
+head(reordered_df)
+df_3 <- reordered_df[,1:150]
+df_3 <- cbind(Performance = df2$Performance, df_3)
+
+```
+
+
+```{r}
+#df2$Performance <- cut(as.numeric(df2$ATT8SCR), breaks=c(-1,10,20,30,40,50,60,70,200), labels=c("0-10","10-20","20-30","30-40","40-50","50-60","60-70","70+"))
+#write.csv(df2, "C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\final_data.csv", row.names = TRUE)
+
+
+df2 <- subset(df_3, select = -c(ATT8SCR))
 
 head(df2)
 ```
@@ -129,12 +203,21 @@ df2_clean <- df2[, !nzv$nzv]
 ncol(df2_clean)
 ```
 ```{r}
-head(df2_clean)
-#cor_matrix <- cor(df2_clean[sapply(df2_clean, is.numeric)], use = "complete.obs")
+#head(df2_clean)
+#df2_clean_2 <- df2_clean 
+
+#cor_matrix <- cor(df2_clean_2[sapply(df2_clean_2, is.numeric)], use = "complete.obs")
 
 # Find and remove highly correlated variables (>0.9 correlation)
 #high_cor <- findCorrelation(cor_matrix, cutoff = 0.9)
+#print(cor_matrix)
+
 #df2_clean <- df2_clean[, -high_cor]
+```
+
+```{r}
+na_counts <- colSums(is.na(df2_clean))
+na_counts[na_counts > 0]
 ```
 
 ```{r}
@@ -142,13 +225,22 @@ library(nnet)
 library(randomForest)
 set.seed(42)
 
-#use 70% of dataset as training set and 30% as test set
-sample <- sample(c(TRUE, FALSE), nrow(df2), replace=TRUE, prob=c(0.7,0.3))
-train  <- df2_clean[sample, ]
-test   <- df2_clean[!sample, ]
+train <- sample(nrow(df2_clean), nrow(df2_clean)*0.7)
 
+sample_size <- floor(0.7 * nrow(df2_clean))
+
+set.seed(123)
+train_ind <- sample(seq_len(nrow(df2_clean)), size = sample_size)
+
+train <- df2_clean[train_ind, ]
+test <- df2_clean[-train_ind, ]
+```
+
+
+```{r}
 rf_model <- randomForest(Performance ~ ., data = train, importance = TRUE)
 summary(rf_model)
+
 
 #glm.fits <- multinom(
 #  Performance ~ .,
@@ -157,6 +249,57 @@ summary(rf_model)
 #summary(glm.fits)
 
 ```
+```{r}
+library(caret)
+predicted <- predict(rf_model, test)
+
+conf_matrix <- confusionMatrix(test$Performance, predicted)
+print(conf_matrix)
+```
+```{r}
+table(df2$Performance)
+```
+
+
+```{r}
+library(e1071)
+svmfit_radial <- svm(Performance~., data = train, kernel="radial", gamma=1, cost=1)
+summary(svmfit_radial)
+#plot(svmfit_radial, train) #gamma is the value of γ for the radial basis kernel
+```
+
+
+```{r}
+predicted <- predict(svmfit_radial, test)
+
+conf_matrix <- confusionMatrix(test$Performance, predicted)
+print(conf_matrix)
+```
+
+
+```{r}
+train_2 <- sample(nrow(df2), nrow(df2)*0.8)
+sample_size_2 <- floor(0.7 * nrow(df2))
+
+set.seed(123)
+train_ind_2 <- sample(seq_len(nrow(df2)), size = sample_size_2)
+
+folds <- createFolds(y = df2$Performance, k=10)
+str(folds)
+
+
+
+ for(i in 1:10){
+  fold_test <- df2[folds[[i]],]
+  fold_train <- df2[-folds[[i]],]
+  
+  trained_rf_model_2 <- randomForest(Performance ~ ., data = fold_train, importance = TRUE)
+  predicted_rf_model_2 <- predict(trained_rf_model_2, fold_test)
+  conf_matrix <- confusionMatrix(fold_test$Performance, predicted_rf_model_2)
+  print(conf_matrix)
+ }
+```
+
 ```{r}
 
 ```
