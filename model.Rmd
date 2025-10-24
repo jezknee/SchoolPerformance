@@ -177,6 +177,45 @@ reordered_df <- df2[, sorted_column_order]
 head(reordered_df)
 df_3 <- reordered_df[,1:150]
 df_3 <- cbind(Performance = df2$Performance, df_3)
+```
+
+
+```{r}
+cor_threshold <- 0.7
+cols_to_remove <- c()
+
+for (i in 3:ncol(df_3)) {
+  col_name <- colnames(df_3)[i]
+  
+  # Skip if this column is already marked for removal
+  if (col_name %in% cols_to_remove) next
+  
+  correlations <- df2d.cor[col_name, ]
+  
+  for (j in seq_along(correlations)) {
+    second_col <- names(correlations)[j]
+    
+    # Skip if second_col is already marked for removal
+    if (second_col %in% cols_to_remove) next
+    
+    if (abs(correlations[j]) > cor_threshold & second_col != col_name & second_col != "ATT8SCR") {
+      col_target_cor <- abs(df2d.cor[col_name, "ATT8SCR"])
+      second_col_target_cor <- abs(df2d.cor[second_col, "ATT8SCR"])
+      
+      if (col_target_cor > second_col_target_cor) {
+        cols_to_remove <- c(cols_to_remove, second_col)
+      } else {
+        cols_to_remove <- c(cols_to_remove, col_name)
+        break  # No need to continue checking this column
+      }
+    }
+  }
+}
+
+# Remove duplicates and then remove columns
+cols_to_remove <- unique(cols_to_remove)
+df_3_clean <- df_3[, !(colnames(df_3) %in% cols_to_remove)]
+head(df_3_clean)
 
 ```
 
@@ -186,7 +225,7 @@ df_3 <- cbind(Performance = df2$Performance, df_3)
 #write.csv(df2, "C:\\Users\\jezkn\\Local\\Data Science Projects\\School Data\\2023-2024\\Data\\final_data.csv", row.names = TRUE)
 
 
-df2 <- subset(df_3, select = -c(ATT8SCR))
+df2 <- subset(df_3_clean, select = -c(ATT8SCR))
 
 head(df2)
 ```
@@ -199,8 +238,8 @@ library(caret)
 
 #df2 <- subset(df2, select = -c(URN))
 nzv <- nearZeroVar(df2, saveMetrics = TRUE)
-df2_clean <- df2[, !nzv$nzv]
-ncol(df2_clean)
+df5 <- df2[, !nzv$nzv]
+ncol(df5)
 ```
 ```{r}
 #head(df2_clean)
@@ -216,7 +255,7 @@ ncol(df2_clean)
 ```
 
 ```{r}
-na_counts <- colSums(is.na(df2_clean))
+na_counts <- colSums(is.na(df5))
 na_counts[na_counts > 0]
 ```
 
@@ -225,15 +264,15 @@ library(nnet)
 library(randomForest)
 set.seed(42)
 
-train <- sample(nrow(df2_clean), nrow(df2_clean)*0.7)
+train <- sample(nrow(df5), nrow(df5)*0.8)
 
-sample_size <- floor(0.7 * nrow(df2_clean))
+sample_size <- floor(0.7 * nrow(df5))
 
 set.seed(123)
-train_ind <- sample(seq_len(nrow(df2_clean)), size = sample_size)
+train_ind <- sample(seq_len(nrow(df5)), size = sample_size)
 
-train <- df2_clean[train_ind, ]
-test <- df2_clean[-train_ind, ]
+train <- df5[train_ind, ]
+test <- df5[-train_ind, ]
 ```
 
 
@@ -257,46 +296,81 @@ conf_matrix <- confusionMatrix(test$Performance, predicted)
 print(conf_matrix)
 ```
 ```{r}
-table(df2$Performance)
+table(df5$Performance)
+```
+
+
+```{r}
+df4 <- df5
+head(df4)
+df4_clean <- df4[,0:11]
+head(df4_clean)
+```
+
+
+```{r}
+
+library(nnet)
+set.seed(42)
+
+train4 <- sample(nrow(df4_clean), nrow(df4_clean)*0.7)
+
+sample_size4 <- floor(0.7 * nrow(df4_clean))
+
+set.seed(123)
+train_ind4 <- sample(seq_len(nrow(df4_clean)), size = sample_size4)
+
+train4 <- df4_clean[train_ind, ]
+test4 <- df4_clean[-train_ind, ]
 ```
 
 
 ```{r}
 library(e1071)
-svmfit_radial <- svm(Performance~., data = train, kernel="radial", gamma=1, cost=1)
+svmfit_radial <- svm(Performance~., data = train4, kernel="radial", gamma=1, cost=1)
 summary(svmfit_radial)
 #plot(svmfit_radial, train) #gamma is the value of γ for the radial basis kernel
 ```
 
 
 ```{r}
-predicted <- predict(svmfit_radial, test)
+predicted <- predict(svmfit_radial, test4)
 
-conf_matrix <- confusionMatrix(test$Performance, predicted)
+conf_matrix <- confusionMatrix(test4$Performance, predicted)
 print(conf_matrix)
 ```
 
 
 ```{r}
-train_2 <- sample(nrow(df2), nrow(df2)*0.8)
-sample_size_2 <- floor(0.7 * nrow(df2))
+train_2 <- sample(nrow(df5), nrow(df5)*0.8)
+sample_size_2 <- floor(0.7 * nrow(df5))
+train_2_svm <- sample(nrow(df4_clean), nrow(df4_clean)*0.8)
+sample_size_2_svm <- floor(0.7 * nrow(df4_clean))
 
 set.seed(123)
-train_ind_2 <- sample(seq_len(nrow(df2)), size = sample_size_2)
+train_ind_2 <- sample(seq_len(nrow(df5)), size = sample_size_2)
+train_ind_2_svm <- sample(seq_len(nrow(df4_clean)), size = sample_size_2_svm)
 
-folds <- createFolds(y = df2$Performance, k=10)
+folds <- createFolds(y = df5$Performance, k=10)
 str(folds)
-
+folds_svm <- createFolds(y = df4_clean$Performance, k=10)
+str(folds_svm)
 
 
  for(i in 1:10){
-  fold_test <- df2[folds[[i]],]
-  fold_train <- df2[-folds[[i]],]
+  fold_test <- df5[folds[[i]],]
+  fold_train <- df5[-folds[[i]],]
+  fold_test_svm <- df4_clean[folds_svm[[i]],]
+  fold_train_svm <- df4_clean[-folds_svm[[i]],]
   
   trained_rf_model_2 <- randomForest(Performance ~ ., data = fold_train, importance = TRUE)
+  svmfit_radial_2 <- svm(Performance~., data = fold_train_svm, kernel="radial", gamma=1, cost=1)
   predicted_rf_model_2 <- predict(trained_rf_model_2, fold_test)
-  conf_matrix <- confusionMatrix(fold_test$Performance, predicted_rf_model_2)
-  print(conf_matrix)
+  predicted_svm_model_2 <- predict(svmfit_radial_2, fold_test_svm)
+  conf_matrix_rf <- confusionMatrix(fold_test$Performance, predicted_rf_model_2)
+  conf_matrix_svm <- confusionMatrix(fold_test_svm$Performance, predicted_svm_model_2)
+  print(conf_matrix_rf)
+  print(conf_matrix_svm)
  }
 ```
 
